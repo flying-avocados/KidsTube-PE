@@ -1,193 +1,301 @@
 import React, { useState } from 'react';
 import {
   Container,
-  Paper,
   Typography,
   Box,
+  Card,
+  CardContent,
+  TextField,
   Button,
+  Grid,
+  Avatar,
+  Alert,
+  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  TextField,
-  Grid,
-  Card,
-  CardContent,
-  Avatar,
-  IconButton,
-  Alert,
+  DialogActions
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
-import { useSubProfile } from '../contexts/SubProfileContext';
+import {
+  Edit,
+  Lock,
+  Person
+} from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 
 const Profile = () => {
-  const { subProfiles, addSubProfile, updateSubProfile, deleteSubProfile } = useSubProfile();
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingProfile, setEditingProfile] = useState(null);
-  const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState('');
+  const { user, updateProfile, changePassword } = useAuth();
+  const [editMode, setEditMode] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleOpenDialog = (profile = null) => {
-    if (profile) {
-      setEditingProfile(profile);
-      setName(profile.name);
-      setAvatar(profile.avatar || '');
+  const [profileData, setProfileData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || ''
+  });
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    const result = await updateProfile(profileData);
+    
+    if (result.success) {
+      setSuccess('Profile updated successfully!');
+      setEditMode(false);
     } else {
-      setEditingProfile(null);
-      setName('');
-      setAvatar('');
+      setError(result.error);
     }
-    setOpenDialog(true);
-    setError('');
+    
+    setLoading(false);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingProfile(null);
-    setName('');
-    setAvatar('');
-    setError('');
-  };
-
-  const handleSubmit = async () => {
-    if (!name.trim()) {
-      setError('Name is required');
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError('New passwords do not match');
       return;
     }
 
-    try {
-      if (editingProfile) {
-        await updateSubProfile(editingProfile._id, name, avatar);
-      } else {
-        await addSubProfile(name, avatar);
-      }
-      handleCloseDialog();
-    } catch (error) {
-      setError('Failed to save sub-profile');
+    if (passwordData.newPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
     }
-  };
 
-  const handleDelete = async (profileId) => {
-    if (window.confirm('Are you sure you want to delete this sub-profile?')) {
-      try {
-        await deleteSubProfile(profileId);
-      } catch (error) {
-        setError('Failed to delete sub-profile');
-      }
+    setLoading(true);
+    setError('');
+
+    const result = await changePassword({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword
+    });
+
+    if (result.success) {
+      setSuccess('Password changed successfully!');
+      setPasswordDialogOpen(false);
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } else {
+      setError(result.error);
     }
+
+    setLoading(false);
   };
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h4" component="h1">
-              Manage Sub-Profiles
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-            >
-              Add Sub-Profile
-            </Button>
-          </Box>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Profile
+      </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
-          {subProfiles.length === 0 ? (
-            <Box textAlign="center" sx={{ mt: 4 }}>
-              <Typography variant="h6" color="textSecondary" gutterBottom>
-                No sub-profiles created yet
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Create your first sub-profile to start uploading videos
-              </Typography>
-            </Box>
-          ) : (
-            <Grid container spacing={3}>
-              {subProfiles.map((profile) => (
-                <Grid item xs={12} sm={6} md={4} key={profile._id}>
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Avatar sx={{ width: 56, height: 56, mr: 2 }}>
-                          {profile.avatar ? (
-                            <img src={profile.avatar} alt={profile.name} style={{ width: '100%', height: '100%' }} />
-                          ) : (
-                            profile.name.charAt(0)
-                          )}
-                        </Avatar>
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography variant="h6" component="h2">
-                            {profile.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Created {new Date(profile.createdAt).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(profile)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDelete(profile._id)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                    </CardContent>
-                  </Card>
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {/* Profile Information */}
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h6">
+                  Personal Information
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<Edit />}
+                  onClick={() => setEditMode(!editMode)}
+                >
+                  {editMode ? 'Cancel' : 'Edit'}
+                </Button>
+              </Box>
+
+              <Box component="form" onSubmit={handleProfileSubmit}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="First Name"
+                      value={profileData.firstName}
+                      onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                      disabled={!editMode}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Last Name"
+                      value={profileData.lastName}
+                      onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                      disabled={!editMode}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      type="email"
+                      value={profileData.email}
+                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                      disabled={!editMode}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Username"
+                      value={user?.username || ''}
+                      disabled
+                      helperText="Username cannot be changed"
+                    />
+                  </Grid>
                 </Grid>
-              ))}
-            </Grid>
-          )}
-        </Paper>
-      </Box>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingProfile ? 'Edit Sub-Profile' : 'Add New Sub-Profile'}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Name"
-            fullWidth
-            variant="outlined"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Avatar URL (optional)"
-            fullWidth
-            variant="outlined"
-            value={avatar}
-            onChange={(e) => setAvatar(e.target.value)}
-            placeholder="https://example.com/avatar.jpg"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editingProfile ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
+                {editMode && (
+                  <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={loading}
+                    >
+                      {loading ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setEditMode(false);
+                        setProfileData({
+                          firstName: user?.firstName || '',
+                          lastName: user?.lastName || '',
+                          email: user?.email || ''
+                        });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Profile Actions */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Avatar
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    mx: 'auto',
+                    mb: 2,
+                    bgcolor: 'primary.main',
+                    fontSize: '2rem'
+                  }}
+                >
+                  {user?.firstName?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                </Avatar>
+                <Typography variant="h6">
+                  {user?.firstName} {user?.lastName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  @{user?.username}
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<Lock />}
+                onClick={() => setPasswordDialogOpen(true)}
+                sx={{ mb: 2 }}
+              >
+                Change Password
+              </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<Person />}
+                onClick={() => {/* Navigate to account settings */}}
+              >
+                Account Settings
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Change Password Dialog */}
+      <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Change Password</DialogTitle>
+        <Box component="form" onSubmit={handlePasswordSubmit}>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Current Password"
+              type="password"
+              fullWidth
+              required
+              value={passwordData.currentPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="New Password"
+              type="password"
+              fullWidth
+              required
+              value={passwordData.newPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="Confirm New Password"
+              type="password"
+              fullWidth
+              required
+              value={passwordData.confirmPassword}
+              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setPasswordDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={loading}>
+              {loading ? 'Changing...' : 'Change Password'}
+            </Button>
+          </DialogActions>
+        </Box>
       </Dialog>
     </Container>
   );

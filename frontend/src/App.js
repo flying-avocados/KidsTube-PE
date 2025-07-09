@@ -1,18 +1,25 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import { CssBaseline, Box } from '@mui/material';
+
+// Contexts
 import { AuthProvider } from './contexts/AuthContext';
-import { SubProfileProvider } from './contexts/SubProfileContext';
-import Navbar from './components/Navbar';
+
+// Components
+import Navigation from './components/Navigation';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
+import Videos from './pages/Videos';
 import Upload from './pages/Upload';
+import Children from './pages/Children';
 import Profile from './pages/Profile';
-import VideoPlayer from './pages/VideoPlayer';
-import PrivateRoute from './components/PrivateRoute';
 
+// Create theme
 const theme = createTheme({
   palette: {
     primary: {
@@ -22,6 +29,9 @@ const theme = createTheme({
       main: '#dc004e',
     },
   },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+  },
 });
 
 function App() {
@@ -29,36 +39,44 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <SubProfileProvider>
-          <Router>
-            <div className="App">
-              <Navbar />
+        <Router>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Navigation />
+            <Box component="main" sx={{ flexGrow: 1 }}>
               <Routes>
+                {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/" element={<Home />} />
-                <Route path="/video/:videoId" element={<VideoPlayer />} />
-                <Route 
-                  path="/upload" 
-                  element={
-                    <PrivateRoute>
-                      <Upload />
-                    </PrivateRoute>
-                  } 
-                />
-                <Route 
-                  path="/profile" 
-                  element={
-                    <PrivateRoute>
-                      <Profile />
-                    </PrivateRoute>
-                  } 
-                />
+                
+                {/* Protected Routes */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Home />
+                  </ProtectedRoute>
+                } />
+                <Route path="/videos" element={<Videos />} />
+                <Route path="/upload" element={
+                  <ProtectedRoute>
+                    <Upload />
+                  </ProtectedRoute>
+                } />
+                <Route path="/children" element={
+                  <ProtectedRoute>
+                    <Children />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Catch all route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </div>
-          </Router>
-        </SubProfileProvider>
+            </Box>
+          </Box>
+        </Router>
       </AuthProvider>
     </ThemeProvider>
   );

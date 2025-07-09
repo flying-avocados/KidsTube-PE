@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { authAPI } from '../api/auth';
 
 const AuthContext = createContext();
 
@@ -13,61 +13,125 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
 
+  // Check if user is logged in on app start
   useEffect(() => {
-    if (token) {
-      // Set default authorization header for all requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser({ token }); // You could fetch user details here if needed
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+        fetchUserProfile();
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        logout();
+      }
     }
     setLoading(false);
-  }, [token]);
+  }, []);
 
-  const login = async (email, password) => {
+  const fetchUserProfile = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password,
-      });
-      const { token: newToken, userId } = response.data;
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-      setUser({ token: newToken, userId });
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      return { success: true };
+      const response = await authAPI.getProfile();
+      setUser(response.user);
+      localStorage.setItem('user', JSON.stringify(response.user));
     } catch (error) {
-      return { success: false, error: error.response?.data?.message || 'Login failed' };
+      console.error('Error fetching user profile:', error);
+      logout();
     }
   };
 
-  const register = async (email, password) => {
+  const fetchStats = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/register', {
-        email,
-        password,
-      });
+      const response = await authAPI.getStats();
+      setStats(response);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const login = async (credentials) => {
+    try {
+      const response = await authAPI.login(credentials);
+      const { token, user } = response;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+      
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.message || 'Registration failed' };
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Login failed'
+      };
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await authAPI.register(userData);
+      const { token, user } = response;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+      
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Registration failed'
+      };
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    setToken(null);
+    localStorage.removeItem('user');
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
+    setStats(null);
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      const response = await authAPI.updateProfile(profileData);
+      setUser(response.user);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Profile update failed'
+      };
+    }
+  };
+
+  const changePassword = async (passwordData) => {
+    try {
+      await authAPI.changePassword(passwordData);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Password change failed'
+      };
+    }
   };
 
   const value = {
     user,
-    token,
+    loading,
+    stats,
     login,
     register,
     logout,
-    loading,
+    updateProfile,
+    changePassword,
+    fetchStats
   };
 
   return (

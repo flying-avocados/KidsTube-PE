@@ -1,187 +1,379 @@
 import React, { useState } from 'react';
 import {
   Container,
-  Paper,
-  TextField,
-  Button,
   Typography,
   Box,
-  Alert,
+  Card,
+  CardContent,
+  TextField,
+  Button,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  Chip,
+  Alert,
   LinearProgress,
+  Grid,
+  Paper,
+  IconButton
 } from '@mui/material';
+import {
+  CloudUpload,
+  Delete,
+  Add,
+  Close
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useSubProfile } from '../contexts/SubProfileContext';
-import axios from 'axios';
+import { videosAPI } from '../api/videos';
 
 const Upload = () => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedSubProfile, setSelectedSubProfile] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
-  const { subProfiles } = useSubProfile();
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    ageRange: { min: 0, max: 18 },
+    tags: []
+  });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState('');
+  const [newTag, setNewTag] = useState('');
+
+  const categories = [
+    'educational',
+    'entertainment',
+    'music',
+    'story',
+    'art',
+    'science',
+    'other'
+  ];
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
-    if (file && file.type.startsWith('video/')) {
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm', 'video/mkv'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Please select a valid video file (MP4, AVI, MOV, WMV, FLV, WebM, MKV)');
+        return;
+      }
+
+      // Validate file size (100MB limit)
+      if (file.size > 100 * 1024 * 1024) {
+        setError('File size must be less than 100MB');
+        return;
+      }
+
       setSelectedFile(file);
       setError('');
-    } else {
-      setError('Please select a valid video file');
-      setSelectedFile(null);
     }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+  };
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, newTag.trim()]
+      }));
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!title || !selectedFile || !selectedSubProfile) {
-      setError('Please fill in all required fields');
+    if (!selectedFile) {
+      setError('Please select a video file');
       return;
     }
 
-    setUploading(true);
-    setError('');
-    setSuccess('');
-
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('subProfileId', selectedSubProfile);
-    formData.append('video', selectedFile);
+    if (!formData.title.trim()) {
+      setError('Please enter a title');
+      return;
+    }
 
     try {
-      await axios.post('http://localhost:5000/api/videos/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      setUploading(true);
+      setProgress(0);
+
+      const uploadFormData = new FormData();
+      uploadFormData.append('video', selectedFile);
+      uploadFormData.append('title', formData.title);
+      uploadFormData.append('description', formData.description);
+      uploadFormData.append('category', formData.category);
+      uploadFormData.append('ageRange', JSON.stringify(formData.ageRange));
+      uploadFormData.append('tags', formData.tags.join(','));
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const response = await videosAPI.upload(uploadFormData);
       
-      setSuccess('Video uploaded successfully!');
+      clearInterval(progressInterval);
+      setProgress(100);
+
+      // Navigate to the uploaded video after a short delay
       setTimeout(() => {
-        navigate('/');
-      }, 2000);
+        navigate(`/video/${response.video._id}`);
+      }, 1000);
+
     } catch (error) {
       setError(error.response?.data?.message || 'Upload failed');
+      setProgress(0);
     } finally {
       setUploading(false);
     }
   };
 
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   return (
-    <Container maxWidth="md">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom align="center">
-            Upload Video
-          </Typography>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Upload Video
+      </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {success}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="title"
-              label="Video Title"
-              name="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-
-            <TextField
-              margin="normal"
-              fullWidth
-              id="description"
-              label="Description (optional)"
-              name="description"
-              multiline
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-
-            <FormControl fullWidth margin="normal" required>
-              <InputLabel id="sub-profile-label">Select Sub-Profile</InputLabel>
-              <Select
-                labelId="sub-profile-label"
-                id="sub-profile"
-                value={selectedSubProfile}
-                label="Select Sub-Profile"
-                onChange={(e) => setSelectedSubProfile(e.target.value)}
-              >
-                {subProfiles.map((profile) => (
-                  <MenuItem key={profile._id} value={profile._id}>
-                    {profile.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Box sx={{ mt: 2, mb: 2 }}>
+      <Card>
+        <CardContent>
+          <Box component="form" onSubmit={handleSubmit}>
+            {/* File Upload Section */}
+            <Paper
+              sx={{
+                p: 3,
+                mb: 3,
+                border: '2px dashed',
+                borderColor: selectedFile ? 'success.main' : 'grey.300',
+                backgroundColor: selectedFile ? 'success.50' : 'grey.50',
+                textAlign: 'center',
+                cursor: 'pointer',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  backgroundColor: 'primary.50',
+                },
+              }}
+              onClick={() => document.getElementById('video-file').click()}
+            >
               <input
-                accept="video/*"
-                style={{ display: 'none' }}
                 id="video-file"
                 type="file"
+                accept="video/*"
                 onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                disabled={uploading}
               />
-              <label htmlFor="video-file">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  fullWidth
-                  sx={{ py: 2 }}
-                >
-                  {selectedFile ? selectedFile.name : 'Choose Video File'}
-                </Button>
-              </label>
-              {selectedFile && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  File size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                </Typography>
+              
+              {selectedFile ? (
+                <Box>
+                  <Typography variant="h6" color="success.main" gutterBottom>
+                    File Selected
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    {selectedFile.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatFileSize(selectedFile.size)}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<Delete />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFile();
+                    }}
+                    sx={{ mt: 1 }}
+                  >
+                    Remove File
+                  </Button>
+                </Box>
+              ) : (
+                <Box>
+                  <CloudUpload sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Click to select video file
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Supported formats: MP4, AVI, MOV, WMV, FLV, WebM, MKV (Max 100MB)
+                  </Typography>
+                </Box>
               )}
-            </Box>
+            </Paper>
 
+            {/* Upload Progress */}
             {uploading && (
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <LinearProgress />
-                <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-                  Uploading video...
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" gutterBottom>
+                  Uploading... {progress}%
                 </Typography>
+                <LinearProgress variant="determinate" value={progress} />
               </Box>
             )}
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={uploading || !selectedFile || !title || !selectedSubProfile}
-            >
-              {uploading ? 'Uploading...' : 'Upload Video'}
-            </Button>
+            {/* Video Metadata Form */}
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Video Title"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  disabled={uploading}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  multiline
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  disabled={uploading}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={formData.category}
+                    label="Category"
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    disabled={uploading}
+                  >
+                    {categories.map((category) => (
+                      <MenuItem key={category} value={category}>
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <TextField
+                  fullWidth
+                  label="Min Age"
+                  type="number"
+                  value={formData.ageRange.min}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    ageRange: { ...formData.ageRange, min: parseInt(e.target.value) || 0 }
+                  })}
+                  inputProps={{ min: 0, max: 18 }}
+                  disabled={uploading}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={3}>
+                <TextField
+                  fullWidth
+                  label="Max Age"
+                  type="number"
+                  value={formData.ageRange.max}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    ageRange: { ...formData.ageRange, max: parseInt(e.target.value) || 18 }
+                  })}
+                  inputProps={{ min: 0, max: 18 }}
+                  disabled={uploading}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Tags
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                  <TextField
+                    label="Add tag"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                    disabled={uploading}
+                    size="small"
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={handleAddTag}
+                    disabled={uploading || !newTag.trim()}
+                    startIcon={<Add />}
+                  >
+                    Add
+                  </Button>
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {formData.tags.map((tag, index) => (
+                    <Chip
+                      key={index}
+                      label={tag}
+                      onDelete={() => handleRemoveTag(tag)}
+                      disabled={uploading}
+                    />
+                  ))}
+                </Box>
+              </Grid>
+            </Grid>
+
+            {/* Submit Button */}
+            <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                disabled={uploading || !selectedFile}
+                startIcon={<CloudUpload />}
+              >
+                {uploading ? 'Uploading...' : 'Upload Video'}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/my-videos')}
+                disabled={uploading}
+              >
+                Cancel
+              </Button>
+            </Box>
           </Box>
-        </Paper>
-      </Box>
+        </CardContent>
+      </Card>
     </Container>
   );
 };

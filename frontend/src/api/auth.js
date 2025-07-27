@@ -3,14 +3,28 @@ import api from './config';
 export const authAPI = {
   // Register a new user
   register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
+    // If userData is FormData (for file uploads), don't set Content-Type
+    const config = userData instanceof FormData ? {} : {};
+    const response = await api.post('/auth/register', userData, config);
     console.log('sending request to register user');
     return response.data;
   },
 
-  // Login user
+  // Login user (legacy - kept for backward compatibility)
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
+    return response.data;
+  },
+
+  // Child login - uses parent's email and password
+  loginChild: async (credentials) => {
+    const response = await api.post('/auth/login/child', credentials);
+    return response.data;
+  },
+
+  // Parent login - requires email, password, and six digit code
+  loginParent: async (credentials) => {
+    const response = await api.post('/auth/login/parent', credentials);
     return response.data;
   },
 

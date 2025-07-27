@@ -11,6 +11,7 @@ import Navigation from './components/Navigation';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
@@ -18,6 +19,7 @@ import Videos from './pages/Videos';
 import Upload from './pages/Upload';
 import Children from './pages/Children';
 import Profile from './pages/Profile';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 // Create theme
 const theme = createTheme({
@@ -28,11 +30,25 @@ const theme = createTheme({
     secondary: {
       main: '#dc004e',
     },
+    background: {
+      default: '#f3e8ff', // light purple
+      paper: '#fff',
+    },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Comic Sans MS", "Comic Neue", "Baloo", "Arial Rounded MT Bold", "Arial", sans-serif',
   },
 });
+
+// Add a ParentRoute wrapper
+const ParentRoute = ({ children }) => {
+  const { user, loading } = require('./contexts/AuthContext').useAuth();
+  if (loading) return null;
+  if (!user || user.userType !== 'parent') {
+    return <Navigate to="/landing" replace />;
+  }
+  return children;
+};
 
 function App() {
   return (
@@ -45,6 +61,7 @@ function App() {
             <Box component="main" sx={{ flexGrow: 1 }}>
               <Routes>
                 {/* Public Routes */}
+                <Route path="/landing" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 
@@ -54,15 +71,30 @@ function App() {
                     <Home />
                   </ProtectedRoute>
                 } />
-                <Route path="/videos" element={<Videos />} />
+                <Route path="/videos" element={
+                  <ProtectedRoute>
+                    <Videos />
+                  </ProtectedRoute>
+                } />
                 <Route path="/upload" element={
                   <ProtectedRoute>
-                    <Upload />
+                    <ParentRoute>
+                      <Upload />
+                    </ParentRoute>
                   </ProtectedRoute>
                 } />
                 <Route path="/children" element={
                   <ProtectedRoute>
-                    <Children />
+                    <ParentRoute>
+                      <Children />
+                    </ParentRoute>
+                  </ProtectedRoute>
+                } />
+                <Route path="/my-videos" element={
+                  <ProtectedRoute>
+                    <ParentRoute>
+                      <Videos myVideos />
+                    </ParentRoute>
                   </ProtectedRoute>
                 } />
                 <Route path="/profile" element={
@@ -70,9 +102,14 @@ function App() {
                     <Profile />
                   </ProtectedRoute>
                 } />
+                <Route path="/privacy" element={
+                  <ProtectedRoute>
+                    <PrivacyPolicy />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Catch all route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/landing" replace />} />
               </Routes>
             </Box>
           </Box>

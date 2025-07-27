@@ -2,6 +2,7 @@ const express = require('express');
 const ChildProfile = require('../models/Child');
 const Video = require('../models/Video');
 const { auth, requireRole } = require('../middleware/ageCheck');
+const imageUpload = require('../middleware/imageUpload');
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.get('/', auth, requireRole(['parent']), async (req, res) => {
 });
 
 // Create a new child profile
-router.post('/', auth, requireRole(['parent']), async (req, res) => {
+router.post('/', auth, requireRole(['parent']), imageUpload.single('idImage'), async (req, res) => {
   try {
     const { name, dateOfBirth, gender } = req.body;
 
@@ -38,12 +39,19 @@ router.post('/', auth, requireRole(['parent']), async (req, res) => {
       });
     }
 
-    const childProfile = new ChildProfile({
+    const childData = {
       name,
       dateOfBirth: birthDate,
       gender,
       parent: req.user._id
-    });
+    };
+
+    // Add ID image if uploaded
+    if (req.file) {
+      childData.idImage = req.file.filename;
+    }
+
+    const childProfile = new ChildProfile(childData);
 
     await childProfile.save();
 
@@ -95,7 +103,7 @@ router.get('/:id', auth, requireRole(['parent']), async (req, res) => {
 });
 
 // Update a child profile
-router.put('/:id', auth, requireRole(['parent']), async (req, res) => {
+router.put('/:id', auth, requireRole(['parent']), imageUpload.single('idImage'), async (req, res) => {
   try {
     const { name, dateOfBirth, gender } = req.body;
 
@@ -124,6 +132,11 @@ router.put('/:id', auth, requireRole(['parent']), async (req, res) => {
       childProfile.dateOfBirth = birthDate;
     }
     if (gender) childProfile.gender = gender;
+
+    // Update ID image if uploaded
+    if (req.file) {
+      childProfile.idImage = req.file.filename;
+    }
 
     await childProfile.save();
 
@@ -170,7 +183,7 @@ router.delete('/:id', auth, requireRole(['parent']), async (req, res) => {
   }
 });
 
-// Request a video for a child
+// Request a video for a child (parent only)
 router.post('/:id/request-video', auth, requireRole(['parent']), async (req, res) => {
   try {
     const { videoId } = req.body;
@@ -294,6 +307,83 @@ router.put('/:id/approve-video/:videoId', auth, requireRole(['parent']), async (
     console.error('Approve video error:', error);
     res.status(500).json({
       message: 'Error processing video approval',
+      error: error.message
+    });
+  }
+});
+
+// Child requests a video (for child users)
+router.post('/request-video', auth, async (req, res) => {
+  try {
+    const { videoId } = req.body;
+
+    // For child users, we need to find their profile
+    if (req.user.userType !== 'child') {
+      return res.status(403).json({
+        message: 'Only child users can request videos'
+      });
+    }
+
+    // Find child profiles for this parent
+    const children = await ChildProfile.find({ 
+      parent: req.user._id, 
+      isActive: true 
+    });
+
+    if (children.length === 0) {
+      return res.status(404).json({
+        message: 'No child profiles found'
+      });
+    }
+
+    // For now, we'll use the first child profile
+    // In a more sophisticated system, you might want to let the child choose which profile
+    const childProfile = children[0];
+
+    // Check if video exists and is approved
+    const video = await Video.findOne({
+      _id: videoId,
+      isApproved: true,
+      isActive: true
+    });
+
+    if (!video) {
+      return res.status(404).json({
+        message: 'Video not found or not approved'
+      });
+    }
+
+    // Check if video is already requested
+    const existingRequest = childProfile.requestedVideos.find(
+      request => request.video.toString() === videoId
+    );
+
+    if (existingRequest) {
+      return res.status(400).json({
+        message: 'Video already requested'
+      });
+    }
+
+    // Add video to requested list
+    childProfile.requestedVideos.push({
+      video: videoId,
+      status: 'pending',
+      requestedBy: 'child'
+    });
+
+    await childProfile.save();
+
+    res.json({
+      message: 'Video requested successfully! Your parent will review it.',
+      childProfile: {
+        name: childProfile.name,
+        requestedVideos: childProfile.requestedVideos
+      }
+    });
+  } catch (error) {
+    console.error('Child request video error:', error);
+    res.status(500).json({
+      message: 'Error requesting video',
       error: error.message
     });
   }

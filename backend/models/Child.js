@@ -26,6 +26,10 @@ const childProfileSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  idImage: {
+    type: String,
+    default: null
+  },
   requestedVideos: [{
     video: {
       type: mongoose.Schema.Types.ObjectId,

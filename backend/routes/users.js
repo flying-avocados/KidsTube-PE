@@ -5,11 +5,28 @@ const { auth, requireRole } = require('../middleware/ageCheck');
 const router = express.Router();
 
 
-// Get user profile
+// Get user profile with children (for parents)
 router.get('/profile', auth, async (req, res) => {
   try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found'
+      });
+    }
+
+    // Get children profiles if user is a parent
+    let childrenProfiles = [];
+    if (user.userType === 'parent' || user.role === 'parent') {
+      childrenProfiles = await user.getChildrenProfiles();
+    }
+
     res.json({
-      user: req.user
+      user: {
+        ...user.toJSON(),
+        childrenProfiles
+      }
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -43,9 +60,18 @@ router.put('/profile', auth, async (req, res) => {
 
     await user.save();
 
+    // Get children profiles if user is a parent
+    let childrenProfiles = [];
+    if (user.userType === 'parent' || user.role === 'parent') {
+      childrenProfiles = await user.getChildrenProfiles();
+    }
+
     res.json({
       message: 'Profile updated successfully',
-      user: user.toJSON()
+      user: {
+        ...user.toJSON(),
+        childrenProfiles
+      }
     });
   } catch (error) {
     console.error('Update profile error:', error);

@@ -32,14 +32,19 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { videosAPI } from '../api/videos';
+import { childrenAPI } from '../api/children';
+import { useAuth } from '../contexts/AuthContext';
 
 const Videos = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [requestingVideo, setRequestingVideo] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     category: '',
@@ -104,6 +109,21 @@ const Videos = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const handleRequestVideo = async (videoId) => {
+    try {
+      setRequestingVideo(videoId);
+      await childrenAPI.requestVideoAsChild(videoId);
+      setError('');
+      setSuccessMessage('Video requested successfully! Your parent will review it.');
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to request video');
+    } finally {
+      setRequestingVideo(null);
+    }
+  };
+
   const getThumbnailUrl = (video) => {
     if (video.thumbnail) {
       return video.thumbnail;
@@ -129,6 +149,12 @@ const Videos = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
+        </Alert>
+      )}
+
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMessage('')}>
+          {successMessage}
         </Alert>
       )}
 
@@ -313,6 +339,17 @@ const Videos = () => {
                     >
                       Details
                     </Button>
+                    {user && user.userType === 'child' && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="secondary"
+                        disabled={requestingVideo === video._id}
+                        onClick={() => handleRequestVideo(video._id)}
+                      >
+                        {requestingVideo === video._id ? 'Requesting...' : 'Request Video'}
+                      </Button>
+                    )}
                   </CardActions>
                 </Card>
               </Grid>

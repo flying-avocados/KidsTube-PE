@@ -1,10 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Serve static files (uploaded images and videos)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Test route
 app.get('/', (req, res) => {
@@ -30,7 +34,7 @@ app.use(cors(corsOptions));
 
 
 const authRoutes = require('./routes/auth');
-const childrenRoutes = require('./routes//children');
+const childrenRoutes = require('./routes/children');
 const videosRoutes = require('./routes/videos');
 const usersRoutes = require('./routes/users');
 
@@ -38,7 +42,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/subprofiles', childrenRoutes);
 app.use('/api/videos', videosRoutes);
 app.use('/api/users', usersRoutes);
-
 
 
 const PORT = process.env.PORT || 5000;

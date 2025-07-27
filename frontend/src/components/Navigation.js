@@ -46,7 +46,7 @@ const Navigation = () => {
   const handleLogout = () => {
     logout();
     handleMenuClose();
-    navigate('/login');
+    navigate('/landing');
   };
 
   const handleProfile = () => {
@@ -55,12 +55,14 @@ const Navigation = () => {
   };
 
   const isActive = (path) => location.pathname === path;
-
+  const isParent = user && user.userType === 'parent';
   const menuItems = [
     { text: 'Home', path: '/', icon: <Home /> },
     { text: 'Videos', path: '/videos', icon: <VideoLibrary /> },
-    { text: 'My Videos', path: '/my-videos', icon: <Upload /> },
-    { text: 'Children', path: '/children', icon: <FamilyRestroom /> },
+    ...(isParent ? [
+      { text: 'Children', path: '/children', icon: <FamilyRestroom /> }
+     ,
+    ] : []),
   ];
 
   return (

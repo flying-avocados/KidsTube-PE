@@ -16,7 +16,11 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid token or user not found.' });
     }
 
-    req.user = user;
+    // Preserve userType from JWT token
+    req.user = {
+      ...user.toObject(),
+      userType: decoded.userType || 'parent' // Default to parent if not specified
+    };
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -35,7 +39,7 @@ const requireRole = (roles) => {
       return res.status(401).json({ message: 'Authentication required.' });
     }
     
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.userType)) {
       return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
     }
     

@@ -71,6 +71,42 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginChild = async (credentials) => {
+    try {
+      const response = await authAPI.loginChild(credentials);
+      const { token, user } = response;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+      
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Child login failed'
+      };
+    }
+  };
+
+  const loginParent = async (credentials) => {
+    try {
+      const response = await authAPI.loginParent(credentials);
+      const { token, user } = response;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+      
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Parent login failed'
+      };
+    }
+  };
+
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
@@ -127,6 +163,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     stats,
     login,
+    loginChild,
+    loginParent,
     register,
     logout,
     updateProfile,

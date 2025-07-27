@@ -121,12 +121,12 @@ const videoSchema = new mongoose.Schema({
 
 // Virtual for like count
 videoSchema.virtual('likeCount').get(function() {
-  return this.likes.length;
+  return this.likes ? this.likes.length : 0;
 });
 
 // Virtual for comment count
 videoSchema.virtual('commentCount').get(function() {
-  return this.comments.length;
+  return this.comments ? this.comments.length : 0;
 });
 
 // Ensure virtual fields are serialized

@@ -21,8 +21,8 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!user) {
-    // Redirect to login page with the return url
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Redirect to landing page with the return url
+    return <Navigate to="/landing" state={{ from: location }} replace />;
   }
 
   return children;

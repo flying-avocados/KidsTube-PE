@@ -21,7 +21,8 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  Fab
+  Fab,
+  IconButton
 } from '@mui/material';
 import {
   Add,
@@ -31,7 +32,8 @@ import {
   VideoLibrary,
   CheckCircle,
   Pending,
-  Cancel
+  Cancel,
+  PhotoCamera
 } from '@mui/icons-material';
 import { childrenAPI } from '../api/children';
 
@@ -46,6 +48,8 @@ const Children = () => {
     dateOfBirth: '',
     gender: ''
   });
+  const [idImage, setIdImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     fetchChildren();
@@ -72,6 +76,12 @@ const Children = () => {
         dateOfBirth: child.dateOfBirth.split('T')[0],
         gender: child.gender
       });
+      // Set image preview if child has an ID image
+      if (child.idImage) {
+        setImagePreview(`http://localhost:5000/uploads/images/${child.idImage}`);
+      } else {
+        setImagePreview(null);
+      }
     } else {
       setEditingChild(null);
       setFormData({
@@ -79,7 +89,9 @@ const Children = () => {
         dateOfBirth: '',
         gender: ''
       });
+      setImagePreview(null);
     }
+    setIdImage(null);
     setDialogOpen(true);
   };
 
@@ -91,20 +103,67 @@ const Children = () => {
       dateOfBirth: '',
       gender: ''
     });
+    setIdImage(null);
+    setImagePreview(null);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        setError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image file size must be less than 5MB');
+        return;
+      }
+
+      setIdImage(file);
+      setError('');
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setIdImage(null);
+    setImagePreview(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingChild) {
-        await childrenAPI.update(editingChild._id, formData);
-      } else {
-        await childrenAPI.create(formData);
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      Object.keys(formData).forEach(key => {
+        formDataToSend.append(key, formData[key]);
+      });
+      
+      if (idImage) {
+        formDataToSend.append('idImage', idImage);
       }
+
+      if (editingChild) {
+        await childrenAPI.update(editingChild._id, formDataToSend);
+      } else {
+        await childrenAPI.create(formDataToSend);
+      }
+      
+      await fetchChildren();
       handleCloseDialog();
-      fetchChildren();
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to save child profile');
+      console.error('Error saving child profile:', error);
     }
   };
 
@@ -201,9 +260,16 @@ const Children = () => {
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                      {child.name.charAt(0)}
-                    </Avatar>
+                    {child.idImage ? (
+                      <Avatar 
+                        src={`http://localhost:5000/uploads/images/${child.idImage}`}
+                        sx={{ mr: 2, width: 56, height: 56 }}
+                      />
+                    ) : (
+                      <Avatar sx={{ mr: 2, bgcolor: 'primary.main', width: 56, height: 56 }}>
+                        {child.name.charAt(0)}
+                      </Avatar>
+                    )}
                     <Box>
                       <Typography variant="h6" component="h2">
                         {child.name}
@@ -211,6 +277,11 @@ const Children = () => {
                       <Typography variant="body2" color="text.secondary">
                         Age: {child.age} • {child.gender}
                       </Typography>
+                      {child.idImage && (
+                        <Typography variant="caption" color="success.main">
+                          📷 ID Image uploaded
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
 
@@ -312,6 +383,73 @@ const Children = () => {
                 <MenuItem value="prefer-not-to-say">Prefer not to say</MenuItem>
               </Select>
             </FormControl>
+            <Box sx={{ mt: 2, mb: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2, color: '#1976d2' }}>
+                📷 Upload ID Image
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ position: 'relative', mb: 2 }}>
+                  <Avatar
+                    src={imagePreview}
+                    sx={{
+                      width: 120,
+                      height: 120,
+                      border: '3px solid #1976d2',
+                      backgroundColor: imagePreview ? 'transparent' : '#e3f2fd'
+                    }}
+                  >
+                    {!imagePreview && '👤'}
+                  </Avatar>
+                  
+                  {imagePreview && (
+                    <IconButton
+                      onClick={removeImage}
+                      sx={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        backgroundColor: '#f44336',
+                        color: 'white',
+                        '&:hover': {
+                          backgroundColor: '#d32f2f',
+                        }
+                      }}
+                    >
+                      <Delete />
+                    </IconButton>
+                  )}
+                </Box>
+
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="id-image-upload"
+                  type="file"
+                  onChange={handleImageChange}
+                />
+                <label htmlFor="id-image-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<PhotoCamera />}
+                    sx={{ mb: 1 }}
+                  >
+                    Choose ID Photo
+                  </Button>
+                </label>
+                
+                <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  Upload a clear photo of the child's ID (JPEG, PNG, GIF, WebP up to 5MB)
+                </Typography>
+              </Box>
+              
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>

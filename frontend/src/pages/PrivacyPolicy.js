@@ -29,7 +29,7 @@ const PrivacyPolicy = () => {
           Privacy Policy
         </Typography>
         <Typography variant="body1" paragraph>
-          KidsTube values your privacy. We collect only the information necessary to provide a safe and enjoyable experience for children and parents. Your data may be shared with third parties. You can view all information associated with your account below.
+          KidsTube values your privacy. We collect the information necessary to provide a safe and enjoyable experience for children and parents. Your data may be shared with third parties. You can view all information associated with your account below.
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Typography variant="h5" gutterBottom>
@@ -79,7 +79,7 @@ const PrivacyPolicy = () => {
           Watch History
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Watch history feature coming soon. (Not yet implemented)
+          Watch history feature coming soon. 
         </Typography>
       </Paper>
     </Box>

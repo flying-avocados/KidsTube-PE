@@ -33,9 +33,12 @@ import {
   CheckCircle,
   Pending,
   Cancel,
-  PhotoCamera
+  PhotoCamera,
+  History
 } from '@mui/icons-material';
 import { childrenAPI } from '../api/children';
+import ChildHistory from '../components/ChildHistory';
+import ChildVideoManagement from '../components/ChildVideoManagement';
 
 const Children = () => {
   const [children, setChildren] = useState([]);
@@ -50,6 +53,10 @@ const Children = () => {
   });
   const [idImage, setIdImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [selectedChild, setSelectedChild] = useState(null);
+  const [videoManagementDialogOpen, setVideoManagementDialogOpen] = useState(false);
+  const [selectedChildForVideos, setSelectedChildForVideos] = useState(null);
 
   useEffect(() => {
     fetchChildren();
@@ -105,6 +112,26 @@ const Children = () => {
     });
     setIdImage(null);
     setImagePreview(null);
+  };
+
+  const handleOpenHistoryDialog = (child) => {
+    setSelectedChild(child);
+    setHistoryDialogOpen(true);
+  };
+
+  const handleCloseHistoryDialog = () => {
+    setHistoryDialogOpen(false);
+    setSelectedChild(null);
+  };
+
+  const handleOpenVideoManagementDialog = (child) => {
+    setSelectedChildForVideos(child);
+    setVideoManagementDialogOpen(true);
+  };
+
+  const handleCloseVideoManagementDialog = () => {
+    setVideoManagementDialogOpen(false);
+    setSelectedChildForVideos(null);
   };
 
   const handleImageChange = (e) => {
@@ -323,9 +350,16 @@ const Children = () => {
                   <Button
                     size="small"
                     startIcon={<VideoLibrary />}
-                    onClick={() => {/* Navigate to child's video management */}}
+                    onClick={() => handleOpenVideoManagementDialog(child)}
                   >
                     Manage Videos
+                  </Button>
+                  <Button
+                    size="small"
+                    startIcon={<History />}
+                    onClick={() => handleOpenHistoryDialog(child)}
+                  >
+                    View History
                   </Button>
                   <Button
                     size="small"
@@ -458,6 +492,42 @@ const Children = () => {
             </Button>
           </DialogActions>
         </Box>
+      </Dialog>
+
+      {/* Child History Dialog */}
+      <Dialog open={historyDialogOpen} onClose={handleCloseHistoryDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {selectedChild ? `History for ${selectedChild.name}` : ''}
+        </DialogTitle>
+        <DialogContent>
+          {selectedChild ? (
+            <ChildHistory childId={selectedChild._id} />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No child selected for history.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseHistoryDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Child Video Management Dialog */}
+      <Dialog open={videoManagementDialogOpen} onClose={handleCloseVideoManagementDialog} maxWidth="lg" fullWidth>
+        <DialogContent sx={{ p: 0 }}>
+          {selectedChildForVideos ? (
+            <ChildVideoManagement 
+              childId={selectedChildForVideos._id} 
+              childName={selectedChildForVideos.name}
+              onClose={handleCloseVideoManagementDialog}
+            />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No child selected for video management.
+            </Typography>
+          )}
+        </DialogContent>
       </Dialog>
     </Container>
   );

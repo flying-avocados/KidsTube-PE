@@ -16,6 +16,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import Videos from './pages/Videos';
+import VideoPlayer from './pages/VideoPlayer';
 import Upload from './pages/Upload';
 import Children from './pages/Children';
 import Profile from './pages/Profile';
@@ -74,6 +75,11 @@ function App() {
                 <Route path="/videos" element={
                   <ProtectedRoute>
                     <Videos />
+                  </ProtectedRoute>
+                } />
+                <Route path="/video/:videoId" element={
+                  <ProtectedRoute>
+                    <VideoPlayer />
                   </ProtectedRoute>
                 } />
                 <Route path="/upload" element={

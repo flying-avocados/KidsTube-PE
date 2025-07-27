@@ -30,6 +30,39 @@ const childProfileSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  searchHistory: [{
+    query: {
+      type: String,
+      required: true
+    },
+    searchedAt: {
+      type: Date,
+      default: Date.now
+    },
+    resultsCount: {
+      type: Number,
+      default: 0
+    }
+  }],
+  watchHistory: [{
+    video: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Video',
+      required: true
+    },
+    watchedAt: {
+      type: Date,
+      default: Date.now
+    },
+    watchDuration: {
+      type: Number, // in seconds
+      default: 0
+    },
+    completed: {
+      type: Boolean,
+      default: false
+    }
+  }],
   requestedVideos: [{
     video: {
       type: mongoose.Schema.Types.ObjectId,

@@ -136,11 +136,13 @@ const Navigation = () => {
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          <MenuItem onClick={handleProfile}>
-            <AccountCircle sx={{ mr: 1 }} />
-            Profile
-          </MenuItem>
-          <Divider />
+          {isParent && (
+            <MenuItem onClick={handleProfile}>
+              <AccountCircle sx={{ mr: 1 }} />
+              Profile
+            </MenuItem>
+          )}
+          {isParent && <Divider />}
           <MenuItem onClick={handleLogout}>
             <Logout sx={{ mr: 1 }} />
             Logout
@@ -171,10 +173,12 @@ const Navigation = () => {
             </MenuItem>
           ))}
           <Divider />
-          <MenuItem onClick={handleProfile}>
-            <AccountCircle sx={{ mr: 1 }} />
-            Profile
-          </MenuItem>
+          {isParent && (
+            <MenuItem onClick={handleProfile}>
+              <AccountCircle sx={{ mr: 1 }} />
+              Profile
+            </MenuItem>
+          )}
           <MenuItem onClick={handleLogout}>
             <Logout sx={{ mr: 1 }} />
             Logout

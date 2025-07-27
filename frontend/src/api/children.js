@@ -57,5 +57,43 @@ export const childrenAPI = {
   requestVideoAsChild: async (videoId) => {
     const response = await api.post('/subprofiles/request-video', { videoId });
     return response.data;
+  },
+
+  // Track search history (for child users)
+  trackSearchHistory: async (query, resultsCount) => {
+    const response = await api.post('/subprofiles/search-history', { query, resultsCount });
+    return response.data;
+  },
+
+  // Track watch history (for child users)
+  trackWatchHistory: async (videoId, watchDuration, completed) => {
+    const response = await api.post('/subprofiles/watch-history', { videoId, watchDuration, completed });
+    return response.data;
+  },
+
+  // Get search and watch history (for parents)
+  getHistory: async (childId) => {
+    const response = await api.get(`/subprofiles/${childId}/history`);
+    return response.data;
+  },
+
+  // Clear search history (for parents)
+  clearSearchHistory: async (childId) => {
+    const response = await api.delete(`/subprofiles/${childId}/search-history`);
+    return response.data;
+  },
+
+  // Clear watch history (for parents)
+  clearWatchHistory: async (childId) => {
+    const response = await api.delete(`/subprofiles/${childId}/watch-history`);
+    return response.data;
+  },
+
+  // Get approved videos (for child users)
+  getApprovedVideos: async () => {
+    console.log('Calling getApprovedVideos API...');
+    const response = await api.get('/subprofiles/approved-videos');
+    console.log('getApprovedVideos API response:', response);
+    return response.data;
   }
 }; 

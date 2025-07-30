@@ -21,15 +21,18 @@ import {
   Lock,
   Person
 } from '@mui/icons-material';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Profile = () => {
   const { user, updateProfile, changePassword } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [accountSettingsDialogOpen, setAccountSettingsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
 
   const [profileData, setProfileData] = useState({
     firstName: user?.firstName || '',
@@ -244,7 +247,7 @@ const Profile = () => {
                 fullWidth
                 variant="outlined"
                 startIcon={<Person />}
-                onClick={() => {/* Navigate to account settings */}}
+                onClick={() => {setAccountSettingsDialogOpen(true)}}
               >
                 Account Settings
               </Button>
@@ -252,6 +255,24 @@ const Profile = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Account Settings Dialog */}     
+      <Dialog open={accountSettingsDialogOpen} onClose={() => setAccountSettingsDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Account Settings</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+          Manage your info, privacy, and security to make KidsTube work better for you.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={() => {
+              setAccountSettingsDialogOpen(false);
+              navigate('/privacy');
+            }}>Learn More</Button>
+            <Button onClick={() => setAccountSettingsDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
 
       {/* Change Password Dialog */}
       <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} maxWidth="sm" fullWidth>

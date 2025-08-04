@@ -164,7 +164,7 @@ const Register = () => {
             {/* Profile Image Upload */}
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
               <Typography variant="h6" sx={{ mb: 2, color: '#1976d2' }}>
-                📸 Upload Profile Picture
+                📸 Upload Driver's License or ID Card
               </Typography>
               
               <Box sx={{ position: 'relative', mb: 2 }}>
@@ -218,7 +218,7 @@ const Register = () => {
               </label>
               
               <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                Upload a clear photo of yourself (JPEG, PNG, GIF, WebP up to 5MB)
+                Upload a photo of a valid driver's license or ID card. Must include date of birth (JPEG, PNG, GIF, WebP up to 5MB)
               </Typography>
             </Box>
 

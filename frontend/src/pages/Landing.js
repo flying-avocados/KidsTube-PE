@@ -13,7 +13,11 @@ import {
   CardContent,
   CardActions,
   Grid,
-  Divider
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +39,8 @@ const Landing = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [tempCredentials, setTempCredentials] = useState({ email: '', password: '' });
 
   const handleChange = (e) => {
     setFormData({
@@ -53,7 +59,18 @@ const Landing = () => {
       const { sixDigitCode, ...childCredentials } = formData;
       result = await loginChild(childCredentials);
     } else {
-      result = await loginParent(formData);
+      // For parent, first validate email and password
+      if (!formData.email || !formData.password) {
+        setError('Email and password are required');
+        setLoading(false);
+        return;
+      }
+      
+      // Store credentials and show code dialog
+      setTempCredentials({ email: formData.email, password: formData.password });
+      setShowCodeDialog(true);
+      setLoading(false);
+      return;
     }
     
     if (result.success) {
@@ -65,13 +82,34 @@ const Landing = () => {
     setLoading(false);
   };
 
+  const handleCodeSubmit = async () => {
+    if (!formData.sixDigitCode || !/^\d{6}$/.test(formData.sixDigitCode)) {
+      setError('Six digit code must be exactly 6 digits');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const result = await loginParent({
+      email: tempCredentials.email,
+      password: tempCredentials.password,
+      sixDigitCode: formData.sixDigitCode
+    });
+    
+    if (result.success) {
+      setShowCodeDialog(false);
+      navigate('/');
+    } else {
+      setError(result.error);
+    }
+    
+    setLoading(false);
+  };
+
   const validateForm = () => {
     if (!formData.email || !formData.password) {
       setError('Email and password are required');
-      return false;
-    }
-    if (userType === 'parent' && (!formData.sixDigitCode || !/^\d{6}$/.test(formData.sixDigitCode))) {
-      setError('Six digit code must be exactly 6 digits');
       return false;
     }
     return true;
@@ -92,6 +130,8 @@ const Landing = () => {
       sixDigitCode: ''
     });
     setError('');
+    setShowCodeDialog(false);
+    setTempCredentials({ email: '', password: '' });
   };
 
   if (!userType) {
@@ -265,24 +305,7 @@ const Landing = () => {
               value={formData.password}
               onChange={handleChange}
             />
-            {userType === 'parent' && (
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="sixDigitCode"
-                label="Six Digit Security Code"
-                type="text"
-                id="sixDigitCode"
-                inputProps={{
-                  maxLength: 6,
-                  pattern: '[0-9]*'
-                }}
-                helperText="Enter the 6-digit code you created during registration"
-                value={formData.sixDigitCode}
-                onChange={handleChange}
-              />
-            )}
+
             <Button
               type="submit"
               fullWidth
@@ -320,6 +343,70 @@ const Landing = () => {
           </Box>
         </Paper>
       </Box>
+
+      {/* Six Digit Code Dialog for Parents */}
+      <Dialog 
+        open={showCodeDialog} 
+        onClose={() => setShowCodeDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+            <SecurityRounded sx={{ fontSize: 40, color: '#1976d2', mr: 2 }} />
+            <Typography variant="h5">Security Verification</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 3, textAlign: 'center' }}>
+            Please enter your 6-digit security code to complete the login process.
+          </Typography>
+          
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          
+          <TextField
+            autoFocus
+            margin="dense"
+            required
+            fullWidth
+            name="sixDigitCode"
+            label="Six Digit Security Code"
+            type="text"
+            id="sixDigitCode"
+            inputProps={{
+              maxLength: 6,
+              pattern: '[0-9]*'
+            }}
+            helperText="Enter the 6-digit code you created during registration"
+            value={formData.sixDigitCode}
+            onChange={handleChange}
+            sx={{ mb: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button 
+            onClick={() => setShowCodeDialog(false)}
+            variant="outlined"
+            fullWidth
+            sx={{ mr: 1 }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCodeSubmit}
+            variant="contained"
+            fullWidth
+            disabled={loading}
+            sx={{ ml: 1 }}
+          >
+            {loading ? <CircularProgress size={20} /> : 'Verify & Sign In'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

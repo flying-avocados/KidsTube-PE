@@ -150,16 +150,6 @@ A secure video-sharing platform backend designed for parents to manage child-app
 - Indexes are defined for performance optimization
 - Virtual fields for computed properties
 
-## Production Considerations
-
-- Use environment variables for sensitive data
-- Set up proper MongoDB authentication
-- Use a strong JWT secret
-- Consider using cloud storage for videos
-- Implement rate limiting
-- Set up proper logging
-- Use HTTPS in production
-- Regular database backups
 
 ## License
 

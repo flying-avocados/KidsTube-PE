@@ -22,3 +22,7 @@ Upon completion of this case study, learners will be able to:
 - Communicate privacy risks effectively.
 
 This project will contribute to the development of valuable educational resources for teaching privacy threat modeling. The resulting case study can be used in academic courses such as Engineering Privacy in Software, professional training offered through the CMU Privacy Engineering program, and self-learning initiatives to equip individuals with the essential skills to proactively address privacy risks in the design and development of systems.
+
+# Case Study Description 
+KidsTube is a U.S video streaming service for children that is similar to other streaming services in most aspects: content creators upload and delete content, the service shares videos to users based on internal recommendation systems, and users view, like, and comment on uploaded videos. A unique feature of this service is that it allows parents to approve video content for their children and monitor their search and watch histories. Note that since this service is targeted towards children under the age of 13, it is subject to the Children's Online Privacy Protection Act (COPPA). 
+

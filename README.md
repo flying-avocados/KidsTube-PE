@@ -13,12 +13,12 @@ Privacy threat modeling is a crucial skill for individuals and organizations inv
 # Learning Outcomes for Users of the Case Study
 
 Upon completion of this case study, learners will be able to:
-Understand the importance of privacy threat modeling in the development lifecycle.
-Identify and analyze personal data assets within a system.
-Apply a structured privacy threat modeling framework to a real-world scenario.
-Identify potential LINDDUN and UsersFirst privacy threats and vulnerabilities, which can be extendable to threats from other privacy threat-modeling frameworks.
-Assess the potential impact of privacy breaches on individuals and organizations.
-Propose and evaluate mitigation strategies and privacy-enhancing technologies.
-Communicate privacy risks effectively.
+- Understand the importance of privacy threat modeling in the development lifecycle.
+- Identify and analyze personal data assets within a system.
+- Apply a structured privacy threat modeling framework to a real-world scenario.
+- Identify potential LINDDUN and UsersFirst privacy threats and vulnerabilities, which can be extendable to threats from other privacy threat-modeling frameworks.
+- Assess the potential impact of privacy breaches on individuals and organizations.
+- Propose and evaluate mitigation strategies and privacy-enhancing technologies.
+- Communicate privacy risks effectively.
 
 This project will contribute to the development of valuable educational resources for teaching privacy threat modeling. The resulting case study can be used in academic courses such as Engineering Privacy in Software, professional training offered through the CMU Privacy Engineering program, and self-learning initiatives to equip individuals with the essential skills to proactively address privacy risks in the design and development of systems.
